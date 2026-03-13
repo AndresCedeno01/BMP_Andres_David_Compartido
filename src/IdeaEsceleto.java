@@ -4,9 +4,10 @@ import java.io.IOException;
 import java.util.Scanner;
 
 public class IdeaEsceleto {
+	
+	private static Scanner scanner = new Scanner(System.in);
 
 	public static void main(String[] args) {
-		Scanner scanner = new Scanner(System.in);
 
 		System.out.print("Introduce el nombre de la imagen a generar (ej: imagen.bmp): ");
 		String nombreFichero = scanner.nextLine();
