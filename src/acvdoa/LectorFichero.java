@@ -38,9 +38,7 @@ public class LectorFichero {
 				RandomAccessFile raf = new RandomAccessFile(f, "rw");
 
 				raf.seek(18);
-
-				int tamanoImagen;
-				tamanoImagen = Integer.reverseBytes(raf.readInt());
+				int tamanoImagen = Integer.reverseBytes(raf.readInt());
 				int tamanoFigura = recibeTamFig(tamanoImagen);
 
 				System.out.println("\n--- Color de la Figura ---");
@@ -53,31 +51,43 @@ public class LectorFichero {
 				int finX = inicioX + tamanoFigura - 1;
 				int finY = inicioY + tamanoFigura - 1;
 
-				raf.seek(53);
-				for (int y = tamanoImagen - 1; y >= 0; y--) {
+				int bytesFilaSinRelleno = tamanoImagen * 3;
+				int relleno = (4 - (bytesFilaSinRelleno % 4)) % 4;
+				long posicionActual = 54;
+
+				for (int y = 0; y < tamanoImagen; y++) {
 					for (int x = 0; x < tamanoImagen; x++) {
 
-						if ((y == inicioY || y == finY) && x >= inicioX && x <= finX) { // Pintando techo o base del
-																						// cuadrado
+						if ((y == inicioY || y == finY) && x >= inicioX && x <= finX) {
+
+							raf.seek(posicionActual);
 							raf.write(figuraAz);
 							raf.write(figuraVe);
 							raf.write(figuraRo);
 
-						} else if ((x == inicioX || x == finX) && y >= inicioY && y <= finY) { // Pintando laterales del
-																								// cuadrado
+						} else if ((x == inicioX || x == finX) && y >= inicioY && y <= finY) {
+
+							raf.seek(posicionActual);
 							raf.write(figuraAz);
 							raf.write(figuraVe);
 							raf.write(figuraRo);
 						}
+
+						posicionActual += 3;
 					}
+
+					posicionActual += relleno;
 				}
+
 				raf.close();
+				System.out.println("\nImagen sobrescrita correctamente!\n");
+
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
-		} else
+		} else {
 			System.out.println("El fichero no existe \n");
-
+		}
 	}
 
 	private static void generarImagen() {
@@ -100,7 +110,7 @@ public class LectorFichero {
 		generarArchivoBMP(nombreFichero, tamanoImagen, tamanoFigura, fondoRo, fondoVe, fondoAz, figuraRo, figuraVe,
 				figuraAz);
 
-		System.out.println("\n¡Imagen generada con éxito en: " + nombreFichero + "!");
+		System.out.println("\nImagen generada correctamente!");
 	}
 
 	private static int menu() {
@@ -148,7 +158,7 @@ public class LectorFichero {
 		int tamanoFigura = 0;
 		while (tamanoFigura < 1)
 			try {
-				System.out.print("Introduce el tamaño del cuadrado a introducir: ");
+				System.out.print("Introduce el tamaño del cuadrado a introducir (1-" + (tamanoImagen - 2) + "): ");
 				tamanoFigura = scanner.nextInt();
 				scanner.nextLine();
 				if (tamanoFigura < 1 || tamanoFigura > tamanoImagen - 2) {
