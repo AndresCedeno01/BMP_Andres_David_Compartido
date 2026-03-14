@@ -110,15 +110,15 @@ public class LectorFichero {
 		
 	}
 
-//	private static void escribir2Bytes(FileOutputStream fos, int valor){
-//		try {
-//			fos.write(valor % 256);
-//			fos.write((valor / 256) % 256);
-//		} catch (IOException e) {
-//			e.printStackTrace();
-//		}
-//		
-//	}
+	private static void escribir2Bytes(FileOutputStream fos, int valor){
+		try {
+			fos.write(valor % 256);
+			fos.write((valor / 256) % 256);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+	}
 
 	private static void generarArchivoBMP(String nombreFichero, int tamanoImagen, int tamanoFigura, int fondoRo,
 			int fondoVe, int fondoAz, int figuraRo, int figuraVe, int figuraAz) {
@@ -145,46 +145,27 @@ public class LectorFichero {
             // La firma que pide al iniciar
             fos.write('B');
             fos.write('M');
-            
 
             // Cuánto pesa el archivo total
-//            escribir4Bytes(fos, tamFichero);
-            fos.write(tamFichero);
-//            escribir4Bytes(fos, 0);
-            fos.write(0);
+            escribir4Bytes(fos, tamFichero);
+            escribir4Bytes(fos, 0);
             // Reservado, siempre 0
-//            escribir4Bytes(fos, 54);
-            fos.write(54);
+            escribir4Bytes(fos, 54);
 
-//            escribir4Bytes(fos, 40);
-            fos.write(40);
+            escribir4Bytes(fos, 40);
             // Ancho
-//            escribir4Bytes(fos, tamanoImagen);
-            fos.write(tamanoImagen);
+            escribir4Bytes(fos, tamanoImagen);
             // Alto
-//            escribir4Bytes(fos, tamanoImagen);
-            fos.write(tamanoImagen);
+            escribir4Bytes(fos, tamanoImagen);
 
-//            escribir2Bytes(fos, 1);
-//            escribir2Bytes(fos, 24);
-            byte[] arrayDatos = {1, 0, 24, 0};
-
-            fos.write(arrayDatos);
-//            escribir4Bytes(fos, 0); 
-            fos.write(0);
-           
-//            escribir4Bytes(fos, tamPixeles);
-            fos.write(tamPixeles);
-            
-            fos.write(0);
-            fos.write(0);
-            fos.write(0);
-            fos.write(0);
-
-//            escribir4Bytes(fos, 2835);
-//            escribir4Bytes(fos, 2835);
-//            escribir4Bytes(fos, 0);
-//            escribir4Bytes(fos, 0);
+            escribir2Bytes(fos, 1);
+            escribir2Bytes(fos, 24);
+            escribir4Bytes(fos, 0);
+            escribir4Bytes(fos, tamPixeles);
+            escribir4Bytes(fos, 2835);
+            escribir4Bytes(fos, 2835);
+            escribir4Bytes(fos, 0);
+            escribir4Bytes(fos, 0);
 			
 			
 			for (int y = tamanoImagen - 1; y >= 0; y--) {
