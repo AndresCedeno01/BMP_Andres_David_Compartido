@@ -1,7 +1,6 @@
 package acvdoa;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Scanner;
@@ -125,59 +124,83 @@ public class LectorFichero {
 			int fondoVe, int fondoAz, int figuraRo, int figuraVe, int figuraAz) {
 
 		File carpeta = new File("salida_ficheros");
-		if (!carpeta.exists())
-			carpeta.mkdir();
+        if (!carpeta.exists())
+            carpeta.mkdir();
 
-		File f = new File("salida_ficheros/", nombreFichero);
+        File f = new File(carpeta, nombreFichero);
 
-		int bytesFilaSinRelleno = tamanoImagen * 3;
-		int relleno = (4 - (bytesFilaSinRelleno % 4)) % 4;
-		int tamPixeles = (bytesFilaSinRelleno + relleno) * tamanoImagen;
-		int tamFichero = 14 + 40 + tamPixeles;
+        int bytesFilaSinRelleno = tamanoImagen * 3;
+        int relleno = (4 - (bytesFilaSinRelleno % 4)) % 4;
+        int tamPixeles = (bytesFilaSinRelleno + relleno) * tamanoImagen;
+        int tamFichero = 14 + 40 + tamPixeles;
 
-		int inicioX = (tamanoImagen - tamanoFigura) / 2;
-		int inicioY = (tamanoImagen - tamanoFigura) / 2;
-		int finX = inicioX + tamanoFigura - 1;
-		int finY = inicioY + tamanoFigura - 1;
+        int inicioX = (tamanoImagen - tamanoFigura) / 2;
+        int inicioY = (tamanoImagen - tamanoFigura) / 2;
+        int finX = inicioX + tamanoFigura - 1;
+        int finY = inicioY + tamanoFigura - 1;
 
-		try {
-			FileOutputStream fos = new FileOutputStream(f);
+        try {
+            FileOutputStream fos = new FileOutputStream(f);
+            // Cabecera principal (14 bytes)
+            // La firma que pide al iniciar
+            fos.write('B');
+            fos.write('M');
+            
 
-			fos.write('B');
-			fos.write('M');
-		
-			//cabecera 
-			escribir4Bytes(fos, tamFichero);
-			escribir4Bytes(fos, 0);
-			escribir4Bytes(fos, 54);
+            // Cuánto pesa el archivo total
+//            escribir4Bytes(fos, tamFichero);
+            fos.write(tamFichero);
+//            escribir4Bytes(fos, 0);
+            fos.write(0);
+            // Reservado, siempre 0
+//            escribir4Bytes(fos, 54);
+            fos.write(54);
 
-			escribir4Bytes(fos, 40);
-			escribir4Bytes(fos, tamanoImagen);
-			escribir4Bytes(fos, tamanoImagen);
-			escribir2Bytes(fos, 1);
-			escribir2Bytes(fos, 24);
-			escribir4Bytes(fos, 0);
-			escribir4Bytes(fos, tamPixeles);
-			escribir4Bytes(fos, 2835);
-			escribir4Bytes(fos, 2835);
-			escribir4Bytes(fos, 0);
-			escribir4Bytes(fos, 0);
+//            escribir4Bytes(fos, 40);
+            fos.write(40);
+            // Ancho
+//            escribir4Bytes(fos, tamanoImagen);
+            fos.write(tamanoImagen);
+            // Alto
+//            escribir4Bytes(fos, tamanoImagen);
+            fos.write(tamanoImagen);
 
+//            escribir2Bytes(fos, 1);
+            byte[] arrayDatos = {'0', '1', '0', '24'};
+            fos.write('0');
+            fos.write('1');
+            fos.write('0');
+            fos.write('');
+
+            escribir2Bytes(fos, 24);
+            escribir4Bytes(fos, 0);
+            escribir4Bytes(fos, tamPixeles);
+            escribir4Bytes(fos, 2835);
+            escribir4Bytes(fos, 2835);
+            escribir4Bytes(fos, 0);
+            escribir4Bytes(fos, 0);
+			
+			
 			for (int y = tamanoImagen - 1; y >= 0; y--) {
 				for (int x = 0; x < tamanoImagen; x++) {
-					boolean esBorde = ((y == inicioY || y == finY) && x >= inicioX && x <= finX)
-							|| ((x == inicioX || x == finX) && y >= inicioY && y <= finY);
-					if (esBorde) {
+					
+					if ((y == inicioY || y == finY) && x >= inicioX && x <= finX) { //Pintando techo o base del cuadrado
 						fos.write(figuraAz);
 						fos.write(figuraVe);
 						fos.write(figuraRo);
-					} else {
+						
+					}else if((x == inicioX || x == finX) && y >= inicioY && y <= finY) { //Pintando laterales del cuadrado
+						fos.write(figuraAz);
+						fos.write(figuraVe);
+						fos.write(figuraRo);
+						
+					}else {	//Rellenando fondo de la imagen
 						fos.write(fondoAz);
 						fos.write(fondoVe);
 						fos.write(fondoRo);
 					}
 				}
-				for (int p = 0; p < relleno; p++)
+				for (int p = 0; p < relleno; p++) //Rellena los margenes de la imagen si necesita padding
 					fos.write(0);
 			}
 
