@@ -14,6 +14,8 @@ public class LectorFichero {
 
 		int opcion = 0;
 
+		// Primero comprobamos si el directorio de salida existe, si no, lo creamos para
+		// evitar excepciones al escribir.
 		File carpeta = new File("salida_ficheros");
 		if (!carpeta.exists())
 			carpeta.mkdir();
@@ -31,13 +33,23 @@ public class LectorFichero {
 
 	private static void sobreescribirImagen() {
 		String nombreFichero = recogerNombre();
+		// Instanciamos un objeto File apuntando a la ruta relativa del archivo dentro
+		// de la carpeta
 		File f = new File("salida_ficheros/", nombreFichero);
 
+		// Comprobamos que el fichero realmente existe en el sistema antes
 		if (f.exists()) {
 			try {
+				// Para este apartado usamos RandomAccessFile en modo "rw" porque nos permite
+				// mover el puntero a bytes específicos y no tener que rehacer toda la imagen
 				RandomAccessFile raf = new RandomAccessFile(f, "rw");
 
+				// Movemos el puntero a la parte del ancho y alto de la imagen que empieza a
+				// partir del byte 18.
 				raf.seek(18);
+
+				// Leemos 4 bytes, tenemos que invertir los bytes leídos para obtener el tamaño
+				// real.
 				int tamanoImagen = Integer.reverseBytes(raf.readInt());
 				int tamanoFigura = recibeTamFig(tamanoImagen);
 
@@ -46,25 +58,37 @@ public class LectorFichero {
 				int figuraVe = recibeColor("Verde");
 				int figuraAz = recibeColor("Azul");
 
+				// Calculamos las coordenadas (x, y) donde empieza y termina la figura cuadrada
+				// para que quede exactamente centrada en la imagen.
 				int inicioX = (tamanoImagen - tamanoFigura) / 2;
 				int inicioY = (tamanoImagen - tamanoFigura) / 2;
 				int finX = inicioX + tamanoFigura - 1;
 				int finY = inicioY + tamanoFigura - 1;
 
+				// Cada fila de píxeles debe ocupar un número de bytes múltiplo de 4
+				// obligatoriamente.
+				// Si los píxeles no suman un múltiplo de 4, hay que añadir bytes de relleno
+				// (padding).
 				int bytesFilaSinRelleno = tamanoImagen * 3;
 				int relleno = (4 - (bytesFilaSinRelleno % 4)) % 4;
+
+				// La cabecera siempre ocupa 54 bytes
 				long posicionActual = 54;
 
 				for (int y = 0; y < tamanoImagen; y++) {
 					for (int x = 0; x < tamanoImagen; x++) {
 
+						// Si las coordenadas corresponden a los bordes horizontales
 						if ((y == inicioY || y == finY) && x >= inicioX && x <= finX) {
 
+							// Movemos el puntero exactamente al byte del píxel que queremos modificar
 							raf.seek(posicionActual);
+							// Escribimos los colores al reves
 							raf.write(figuraAz);
 							raf.write(figuraVe);
 							raf.write(figuraRo);
 
+							// Si las coordenadas corresponden a los bordes verticales de la figura...
 						} else if ((x == inicioX || x == finX) && y >= inicioY && y <= finY) {
 
 							raf.seek(posicionActual);
@@ -73,12 +97,17 @@ public class LectorFichero {
 							raf.write(figuraRo);
 						}
 
+						// Avanzamos 3 bytes que es lo que ocupa un pixel
 						posicionActual += 3;
 					}
 
+					// Al terminar la fila, sumamos al puntero los bytes de relleno para saltarlos
+					// y que la siguiente iteración empiece en el primer píxel real de la siguiente
+					// fila.
 					posicionActual += relleno;
 				}
 
+				// cerramos el flujo
 				raf.close();
 				System.out.println("\nImagen sobrescrita correctamente!\n");
 
@@ -142,7 +171,8 @@ public class LectorFichero {
 				System.out.print(color + " (0-255): ");
 				colorSeleccionado = scanner.nextInt();
 				scanner.nextLine();
-				// Nos aseguramos que el programa no entre un bucle si el usuario pone un tipo
+				// Nos aseguramos que el programa no entre en un bucle si el usuario pone un
+				// tipo
 				// que no sea Int
 				if (colorSeleccionado < 0 || colorSeleccionado > 255) {
 					throw new Exception();
@@ -192,12 +222,16 @@ public class LectorFichero {
 	private static String recogerNombre() {
 		System.out.print("Introduce el nombre de la imagen a generar: ");
 		String nombreFichero = scanner.nextLine();
+		// Comprobamos la extensión para asegurar que siempre guardamos un archivo
+		// manejable por la aplicación
 		if (!nombreFichero.toLowerCase().endsWith(".bmp")) {
 			nombreFichero += ".bmp";
 		}
 		return nombreFichero;
 	}
 
+	// Vamos desplazando los bits y haciendo módulo 256 para escribir desde el byte
+	// menos significativo al más significativo.
 	private static void escribir4Bytes(FileOutputStream fos, int valor) {
 
 		try {
@@ -211,6 +245,8 @@ public class LectorFichero {
 
 	}
 
+	// Método auxiliar idéntico al anterior pero para datos que en BMP ocupan solo 2
+	// bytes
 	private static void escribir2Bytes(FileOutputStream fos, int valor) {
 		try {
 			fos.write(valor % 256);
@@ -226,9 +262,14 @@ public class LectorFichero {
 
 		File f = new File("salida_ficheros", nombreFichero);
 
+		// Volvemos a calcular el padding
 		int bytesFilaSinRelleno = tamanoImagen * 3;
 		int relleno = (4 - (bytesFilaSinRelleno % 4)) % 4;
+
+		// Calculamos el tamaño total del array de píxeles sumando los bytes de píxel
+		// reales más el padding por fila
 		int tamPixeles = (bytesFilaSinRelleno + relleno) * tamanoImagen;
+		// El peso total del fichero
 		int tamFichero = 14 + 40 + tamPixeles;
 
 		int inicioX = (tamanoImagen - tamanoFigura) / 2;
@@ -237,58 +278,82 @@ public class LectorFichero {
 		int finY = inicioY + tamanoFigura - 1;
 
 		try {
+
+			// FileOutputStream es estrictamente necesario aquí porque estamos generando un
+			// archivo binario, no texto.
 			FileOutputStream fos = new FileOutputStream(f);
-			// Cabecera principal (14 bytes)
-			// La firma que pide al iniciar
+
+			// Cabecera principal
+			// La firma que pide al iniciar. 2 bytes
 			fos.write('B');
 			fos.write('M');
 
 			// Cuánto pesa el archivo total
 			escribir4Bytes(fos, tamFichero);
+
+			// Reservado (4 bytes)
 			escribir4Bytes(fos, 0);
-			// Reservado, siempre 0
+
+			// Offset donde empiezan los datos de la imagen en sí
 			escribir4Bytes(fos, 54);
 
+			// Cabecera de información
+			// Tamaño de esta cabecera
 			escribir4Bytes(fos, 40);
 			// Ancho
 			escribir4Bytes(fos, tamanoImagen);
 			// Alto
 			escribir4Bytes(fos, tamanoImagen);
 
+			// Planos de color, siempre debe ser 1 (2 bytes)
 			escribir2Bytes(fos, 1);
+			// la profundidad de color son 24 bits por píxel, 8 por canal BGR
 			escribir2Bytes(fos, 24);
+			// Compresión de la imagen
 			escribir4Bytes(fos, 0);
+			// Tamaño de los datos, incluyendo padding
 			escribir4Bytes(fos, tamPixeles);
-			escribir4Bytes(fos, 2835);
-			escribir4Bytes(fos, 2835);
+			// Resoluciones de impresión.
+			escribir4Bytes(fos, 0);
+			escribir4Bytes(fos, 0);
+			// Número de colores en la paleta, 0 por defecto en 24bits y colores importantes
+			// igual 0
 			escribir4Bytes(fos, 0);
 			escribir4Bytes(fos, 0);
 
+			// Comienza el pintado de píxeles.
+			// Empezamos el bucle 'y' desde tamanoImagen - 1 bajando hasta 0 por que el BMP
+			// comienza da abajo hacia arriba
 			for (int y = tamanoImagen - 1; y >= 0; y--) {
 				for (int x = 0; x < tamanoImagen; x++) {
+					// Base del cuadrado
 
-					if ((y == inicioY || y == finY) && x >= inicioX && x <= finX) { // Pintando techo o base del
-																					// cuadrado
+					if ((y == inicioY || y == finY) && x >= inicioX && x <= finX) {
+						// Al igual que al sobrescribir, escribimos en orden BGR , Azul, Verde, Rojo
+						// ,por especificación
 						fos.write(figuraAz);
 						fos.write(figuraVe);
 						fos.write(figuraRo);
-
-					} else if ((x == inicioX || x == finX) && y >= inicioY && y <= finY) { // Pintando laterales del
-																							// cuadrado
+						// laterales del cuadrado
+					} else if ((x == inicioX || x == finX) && y >= inicioY && y <= finY) {
 						fos.write(figuraAz);
 						fos.write(figuraVe);
 						fos.write(figuraRo);
-
-					} else { // Rellenando fondo de la imagen
+						// Rellenando fondo de la imagen
+					} else {
 						fos.write(fondoAz);
 						fos.write(fondoVe);
 						fos.write(fondoRo);
 					}
 				}
-				for (int p = 0; p < relleno; p++) // Rellena los margenes de la imagen si necesita padding
+				// Al finalizar una fila completa de píxeles, si el ancho en bytes no era
+				// múltiplo de 4,
+				// el bucle escribe tantos ceros como calculamos en el relleno
+				for (int p = 0; p < relleno; p++)
 					fos.write(0);
 			}
 
+			// Cerramos el stream
 			fos.close();
 
 		} catch (Exception e) {
