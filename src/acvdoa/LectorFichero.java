@@ -51,8 +51,7 @@ public class LectorFichero {
 				// Leemos 4 bytes, tenemos que invertir los bytes leídos para obtener el tamaño
 				// real.
 				int tamanoImagen = Integer.reverseBytes(raf.readInt());
-				
-				
+
 				int tamanoFigura = recibeTamFig(tamanoImagen, false);
 
 				System.out.println("\n--- Color de la Figura ---");
@@ -81,7 +80,7 @@ public class LectorFichero {
 					for (int x = 0; x < tamanoImagen; x++) {
 
 						// Comprobamos si las coordenadas corresponden a los bordes de la figura
-						// llamando a los métodos auxiliares correspondientes según la elección del usuario
+						// llamando al método auxiliar del cuadrado
 						if (bordeCuadrado(inicioX, inicioY, x, y, finX, finY)) {
 
 							// Movemos el puntero exactamente al byte del píxel que queremos modificar
@@ -98,7 +97,7 @@ public class LectorFichero {
 					}
 
 					// Al terminar la fila, sumamos al puntero los bytes de relleno para saltarlos
-					// y que la siguiente iteración empiece en el primer píxel real de la siguiente
+					// y que la siguiente iteración empiece en el primer píxel de la siguiente
 					// fila.
 					posicionActual += relleno;
 				}
@@ -304,7 +303,7 @@ public class LectorFichero {
 			FileOutputStream fos = new FileOutputStream(f);
 
 			// Cabecera principal
-			// La firma que pide al iniciar. 2 bytes
+			// el formato lo pide al iniciar. 2 bytes
 			fos.write('B');
 			fos.write('M');
 
@@ -346,13 +345,13 @@ public class LectorFichero {
 			// comienza da abajo hacia arriba
 			for (int y = tamanoImagen - 1; y >= 0; y--) {
 				for (int x = 0; x < tamanoImagen; x++) {
-					// Base de la figura (circulo o cuadrado)
-					
-					// Comprobamos si el píxel forma parte de la figura haciendo uso de los métodos auxiliares
+
+					// Comprobamos si el píxel actual forma parte de los bordes de la figura
+					// utilizando los métodos auxiliares en función de la opción elegida.
 					if ((esCirculo && bordeCirculo(x, y, tamanoFigura, tamanoImagen / 2))
 							|| (!esCirculo && bordeCuadrado(inicioX, inicioY, x, y, finX, finY))) {
 						// Al igual que al sobrescribir, escribimos en orden BGR , Azul, Verde, Rojo
-						// ,por especificación
+						// ,por especificación del formato
 						fos.write(figuraAz);
 						fos.write(figuraVe);
 						fos.write(figuraRo);
@@ -384,16 +383,22 @@ public class LectorFichero {
 	}
 
 	private static boolean bordeCirculo(int x, int y, int radio, int centro) {
-		// Aplicamos el teorema de Pitágoras para conocer la distancia exacta del píxel al centro.
-		// Para evitar el uso de Math y mejorar el rendimiento de la CPU, multiplicamos en vez de usar raíces cuadradas.
+		// Calculamos la distancia del píxel al centro usando el teorema de Pitágoras.
+		// Elevamos al cuadrado multiplicando directamente
 		int cX = x - centro;
 		int cY = y - centro;
 		int distanciaCuadrada = (cX * cX) + (cY * cY);
-		
-		// Como en una cuadrícula de píxeles es difícil dar en el valor exacto, 
-		// creamos un margen de tolerancia (anillo) para asegurar que el círculo se pinte sólido y sin cortes.
+
+		// Añadimos un margen de tolerancia, ya que en una cuadrícula de píxeles
+		// es casi imposible dar con la distancia exacta por el truncamiento de los int
+		// evitando así que el círculo se dibuje con vacíos.
 		int radioInterior = radio - 1;
-		
+
+		// Comprobamos si el píxel está justo en el límite exterior del círculo.
+		// Al definir un rango entre el radio y el radio anterior, nos aseguramos de
+		// pintar una línea continua de un píxel de ancho. Si la distancia al cuadrado
+		// está en este intervalo, devolvemos true para pintar, si no, devolvemos false
+		// para tratarlo como fondo o interior vacío.
 		return distanciaCuadrada >= (radioInterior * radioInterior) && distanciaCuadrada <= (radio * radio);
 	}
 }
