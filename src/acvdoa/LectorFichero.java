@@ -210,8 +210,8 @@ public class LectorFichero {
 		int tamanoFigura = 0;
 		while (tamanoFigura < 1)
 			try {
-				System.out.print("Introduce el tamaño"
-						+ (esCirculo ? (" del radio(1-" + (tamanoImagen/2) + "): ") : ("del cuadrado a introducir(1-" + (tamanoImagen - 2) + "): ")));
+				System.out.print("Introduce el tamaño" + (esCirculo ? (" del radio(1-" + (tamanoImagen / 2) + "): ")
+						: ("del cuadrado a introducir(1-" + (tamanoImagen - 2) + "): ")));
 				tamanoFigura = scanner.nextInt();
 				scanner.nextLine();
 				if (tamanoFigura < 1 || tamanoFigura > (esCirculo ? (tamanoImagen / 2) : (tamanoImagen - 2))) {
@@ -352,14 +352,10 @@ public class LectorFichero {
 				for (int x = 0; x < tamanoImagen; x++) {
 					// Base del cuadrado
 
-					if ((esCirculo && bordeCirculo(inicioX, inicioY, x, y, finX, finY, tamanoFigura / 2)) || (!esCirculo && bordeCuadrado(inicioX, inicioY, x, y, finX, finY)) ) { // 
+					if ((esCirculo && bordeCirculo(x, y, tamanoImagen, (double) tamanoImagen / 2))
+							|| (!esCirculo && bordeCuadrado(inicioX, inicioY, x, y, finX, finY))) {
 						// Al igual que al sobrescribir, escribimos en orden BGR , Azul, Verde, Rojo
 						// ,por especificación
-						fos.write(figuraAz);
-						fos.write(figuraVe);
-						fos.write(figuraRo);
-						// laterales del cuadrado
-					} else if ((x == inicioX || x == finX) && y >= inicioY && y <= finY) { //!esCirculo && bordeCuadrado
 						fos.write(figuraAz);
 						fos.write(figuraVe);
 						fos.write(figuraRo);
@@ -386,11 +382,18 @@ public class LectorFichero {
 	}
 
 	private static boolean bordeCuadrado(int inicioX, int inicioY, int x, int y, int finX, int finY) {
-		return ((y == inicioY || y == finY) && x >= inicioX && x <= finX) || ((x == inicioX || x == finX) && y >= inicioY && y <= finY);
+		return ((y == inicioY || y == finY) && x >= inicioX && x <= finX)
+				|| ((x == inicioX || x == finX) && y >= inicioY && y <= finY);
 	}
 
-	private static boolean bordeCirculo(int inicioX, int inicioY, int x, int y, int radio, int finY, double centro) {
+	private static boolean bordeCirculo(int x, int y, int radio, double centro) {
+		radio *= radio;
+		double cX = centro > x ? (centro - x) : (x - centro), cY = centro > y ? (centro - y) : (y - centro);
 
-		return false;
+		cX *= cX;
+		cY *= cY;
+		
+		return (radio == cX + cY) || ((x == centro && (y == radio + centro || y == radio - centro))
+				|| (y == centro && (x == radio + centro || x == radio - centro)));
 	}
 }
