@@ -51,7 +51,7 @@ public class LectorFichero {
 				// Leemos 4 bytes, tenemos que invertir los bytes leídos para obtener el tamaño
 				// real.
 				int tamanoImagen = Integer.reverseBytes(raf.readInt());
-				int tamanoFigura = recibeTamFig(tamanoImagen);
+				int tamanoFigura = recibeTamFig(tamanoImagen, false);
 
 				System.out.println("\n--- Color de la Figura ---");
 				int figuraRo = recibeColor("Rojo");
@@ -124,7 +124,9 @@ public class LectorFichero {
 
 		int tamanoImagen = recibeTamImg();
 
-		int tamanoFigura = recibeTamFig(tamanoImagen);
+		boolean esCirculo = preguntaFigura();
+
+		int tamanoFigura = recibeTamFig(tamanoImagen, esCirculo);
 
 		System.out.println("\n--- Color del Fondo ---");
 		int fondoRo = recibeColor("Rojo");
@@ -137,9 +139,29 @@ public class LectorFichero {
 		int figuraAz = recibeColor("Azul");
 
 		generarArchivoBMP(nombreFichero, tamanoImagen, tamanoFigura, fondoRo, fondoVe, fondoAz, figuraRo, figuraVe,
-				figuraAz);
+				figuraAz, esCirculo);
 
 		System.out.println("\nImagen generada correctamente!");
+	}
+
+	private static boolean preguntaFigura() {
+		int opcion = 0;
+		while (opcion <= 0)
+			try {
+				System.out.println("\n--- FORMA DE LA FIGURA ---");
+				System.out.println("1. Cuadrado");
+				System.out.println("2. Círculo");
+				System.out.print("Selecciona una opción: ");
+				opcion = scanner.nextInt();
+				scanner.nextLine();
+				if (opcion <= 0 || opcion > 2) {
+					opcion = 0;
+					throw new Exception();
+				}
+			} catch (Exception e) {
+				System.out.println("Introduce 1 o 2\n");
+			}
+		return opcion == 2;
 	}
 
 	private static int menu() {
@@ -184,19 +206,21 @@ public class LectorFichero {
 		return colorSeleccionado;
 	}
 
-	private static int recibeTamFig(int tamanoImagen) {
+	private static int recibeTamFig(int tamanoImagen, boolean esCirculo) {
 		int tamanoFigura = 0;
 		while (tamanoFigura < 1)
 			try {
-				System.out.print("Introduce el tamaño del cuadrado a introducir (1-" + (tamanoImagen - 2) + "): ");
+				System.out.print("Introduce el tamaño"
+						+ (esCirculo ? (" del radio(1-" + (tamanoImagen/2) + "): ") : ("del cuadrado a introducir(1-" + (tamanoImagen - 2) + "): ")));
 				tamanoFigura = scanner.nextInt();
 				scanner.nextLine();
-				if (tamanoFigura < 1 || tamanoFigura > tamanoImagen - 2) {
+				if (tamanoFigura < 1 || tamanoFigura > (esCirculo ? (tamanoImagen / 2) : (tamanoImagen - 2))) {
 					tamanoFigura = 0;
 					throw new Exception();
 				}
 			} catch (Exception e) {
-				System.out.println("Introduce un numero entre 1 y " + (tamanoImagen - 2) + "\n");
+				System.out.println("Introduce un numero entre 1 y "
+						+ (esCirculo ? (tamanoImagen / 2) : (tamanoImagen - 2)) + "\n");
 				tamanoFigura = 0;
 			}
 		return tamanoFigura;
@@ -258,7 +282,7 @@ public class LectorFichero {
 	}
 
 	private static void generarArchivoBMP(String nombreFichero, int tamanoImagen, int tamanoFigura, int fondoRo,
-			int fondoVe, int fondoAz, int figuraRo, int figuraVe, int figuraAz) {
+			int fondoVe, int fondoAz, int figuraRo, int figuraVe, int figuraAz, boolean esCirculo) {
 
 		File f = new File("salida_ficheros", nombreFichero);
 
@@ -328,14 +352,14 @@ public class LectorFichero {
 				for (int x = 0; x < tamanoImagen; x++) {
 					// Base del cuadrado
 
-					if ((y == inicioY || y == finY) && x >= inicioX && x <= finX) {
+					if ((esCirculo && bordeCirculo(inicioX, inicioY, x, y, finX, finY, tamanoFigura / 2)) || (!esCirculo && bordeCuadrado(inicioX, inicioY, x, y, finX, finY)) ) { // 
 						// Al igual que al sobrescribir, escribimos en orden BGR , Azul, Verde, Rojo
 						// ,por especificación
 						fos.write(figuraAz);
 						fos.write(figuraVe);
 						fos.write(figuraRo);
 						// laterales del cuadrado
-					} else if ((x == inicioX || x == finX) && y >= inicioY && y <= finY) {
+					} else if ((x == inicioX || x == finX) && y >= inicioY && y <= finY) { //!esCirculo && bordeCuadrado
 						fos.write(figuraAz);
 						fos.write(figuraVe);
 						fos.write(figuraRo);
@@ -359,5 +383,14 @@ public class LectorFichero {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+	}
+
+	private static boolean bordeCuadrado(int inicioX, int inicioY, int x, int y, int finX, int finY) {
+		return ((y == inicioY || y == finY) && x >= inicioX && x <= finX) || ((x == inicioX || x == finX) && y >= inicioY && y <= finY);
+	}
+
+	private static boolean bordeCirculo(int inicioX, int inicioY, int x, int y, int radio, int finY, double centro) {
+
+		return false;
 	}
 }
